@@ -1,1 +1,175 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Книжная полка</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f3ee;
+      color: #292820;
+    }
+    header {
+      background: #263d32;
+      color: white;
+      padding: 28px 7%;
+    }
+    header h1 { margin: 0 0 8px; font-size: 32px; }
+    header p { margin: 0; color: #d9e4d9; }
+    main { max-width: 1100px; margin: auto; padding: 30px 20px; }
+    .search {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #d7d3c9;
+      border-radius: 12px;
+      font-size: 16px;
+      margin-bottom: 24px;
+    }
+    .info { color: #68685e; margin-bottom: 20px; }
+    .books {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 20px;
+    }
+    .book {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 3px 12px #0000000b;
+    }
+    .cover {
+      height: 190px;
+      border-radius: 9px;
+      background: #e4e8dc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px;
+      font-size: 23px;
+      color: #344b3b;
+      font-weight: bold;
+      overflow: hidden;
+    }
+    .cover img { width: 100%; height: 100%; object-fit: cover; }
+    .book h2 { font-size: 19px; margin: 15px 0 7px; }
+    .author { color: #77776d; font-size: 14px; }
+    .description { font-size: 14px; line-height: 1.5; }
+    button {
+      background: #365744;
+      color: white;
+      border: 0;
+      padding: 11px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover { background: #243e2f; }
+    .empty { padding: 30px 0; color: #777; }
+    footer { text-align: center; padding: 30px; color: #777; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 Книжная полка</h1>
+    <p>Найди следующую книгу для своего путешествия</p>
+  </header>
 
+  <main>
+    <input id="search" class="search"
+      placeholder="Поиск по названию или автору..." />
+    <div id="info" class="info">Каталог книг</div>
+    <section id="books" class="books"></section>
+  </main>
+
+  <footer>Моя книжная коллекция</footer>
+
+  <script>
+    // Демонстрационные книги. Позже подключим твой Supabase.
+    const books = [
+      {
+        title: "Мастер и Маргарита",
+        author: "Михаил Булгаков",
+        description: "Роман о любви, свободе и вечной борьбе добра и зла.",
+        color: "#e9d9c4"
+      },
+      {
+        title: "Преступление и наказание",
+        author: "Фёдор Достоевский",
+        description: "Классический роман о совести, выборе и искуплении.",
+        color: "#e1d7ca"
+      },
+      {
+        title: "Маленький принц",
+        author: "Антуан де Сент-Экзюпери",
+        description: "История о дружбе, любви и том, что действительно важно.",
+        color: "#dce7d8"
+      },
+      {
+        title: "1984",
+        author: "Джордж Оруэлл",
+        description: "Знаменитый роман-антиутопия о власти и свободе.",
+        color: "#e8d5d5"
+      },
+      {
+        title: "Гарри Поттер",
+        author: "Дж. К. Роулинг",
+        description: "История о магии, дружбе и взрослении.",
+        color: "#d9dfed"
+      },
+      {
+        title: "Атлант расправил плечи",
+        author: "Айн Рэнд",
+        description: "Роман о личном выборе, идеях и ответственности.",
+        color: "#e7dfc8"
+      }
+    ];
+
+    const container = document.getElementById("books");
+    const search = document.getElementById("search");
+    const info = document.getElementById("info");
+
+    function render() {
+      const query = search.value.trim().toLowerCase();
+      const filtered = books.filter(book =>
+        book.title.toLowerCase().includes(query) ||
+        book.author.toLowerCase().includes(query)
+      );
+
+      info.textContent = `Книг в каталоге: ${filtered.length}`;
+
+      if (!filtered.length) {
+        container.innerHTML = '<p class="empty">Ничего не найдено. Попробуй другой запрос.</p>';
+        return;
+      }
+
+      container.innerHTML = filtered.map((book, index) => `
+        <article class="book">
+          <div class="cover" style="background:${book.color}">
+            ${book.title}
+          </div>
+          <h2>${book.title}</h2>
+          <div class="author">${book.author}</div>
+          <p class="description">${book.description}</p>
+          <button data-index="${index}">Подробнее</button>
+        </article>
+      `).join("");
+
+      container.querySelectorAll("button").forEach((button, index) => {
+        button.addEventListener("click", () => {
+          const book = filtered[index];
+          alert(`${book.title}\nАвтор: ${book.author}\n\n${book.description}`);
+        });
+      });
+    }
+
+    search.addEventListener("input", render);
+    render();
+  </script>
+</body>
+</html>
+```
