@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -55,7 +55,11 @@
       font-weight: bold;
       overflow: hidden;
     }
-    .cover img { width: 100%; height: 100%; object-fit: cover; }
+    .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .book h2 { font-size: 19px; margin: 15px 0 7px; }
     .author { color: #77776d; font-size: 14px; }
     .description { font-size: 14px; line-height: 1.5; }
@@ -82,94 +86,120 @@
   <main>
     <input id="search" class="search"
       placeholder="Поиск по названию или автору..." />
-    <div id="info" class="info">Каталог книг</div>
+    <div id="info" class="info">Загружаем книги...</div>
     <section id="books" class="books"></section>
   </main>
 
   <footer>Моя книжная коллекция</footer>
 
   <script>
-    // Демонстрационные книги. Позже подключим твой Supabase.
-    const books = [
-      {
-        title: "Мастер и Маргарита",
-        author: "Михаил Булгаков",
-        description: "Роман о любви, свободе и вечной борьбе добра и зла.",
-        color: "#e9d9c4"
-      },
-      {
-        title: "Преступление и наказание",
-        author: "Фёдор Достоевский",
-        description: "Классический роман о совести, выборе и искуплении.",
-        color: "#e1d7ca"
-      },
-      {
-        title: "Маленький принц",
-        author: "Антуан де Сент-Экзюпери",
-        description: "История о дружбе, любви и том, что действительно важно.",
-        color: "#dce7d8"
-      },
-      {
-        title: "1984",
-        author: "Джордж Оруэлл",
-        description: "Знаменитый роман-антиутопия о власти и свободе.",
-        color: "#e8d5d5"
-      },
-      {
-        title: "Гарри Поттер",
-        author: "Дж. К. Роулинг",
-        description: "История о магии, дружбе и взрослении.",
-        color: "#d9dfed"
-      },
-      {
-        title: "Атлант расправил плечи",
-        author: "Айн Рэнд",
-        description: "Роман о личном выборе, идеях и ответственности.",
-        color: "#e7dfc8"
-      }
-    ];
+    // Настройки Supabase
+    const SUPABASE_URL = "https://coimqydotznckkoeyfyg.supabase.co";
+    const SUPABASE_KEY = "ВСТАВЬ_СЮДА_СВОЙ_PUBLISHABLE_KEY";
 
     const container = document.getElementById("books");
     const search = document.getElementById("search");
     const info = document.getElementById("info");
 
+    let books = [];
+
+    // Безопасное отображение текста
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function getTitle(book) {
+      return book.title ?? book.name ?? book.book_title ?? "Без названия";
+    }
+
+    function getAuthor(book) {
+      return book.author ?? book.authors ?? "Автор не указан";
+    }
+
+    function getDescription(book) {
+      return book.description ?? book.summary ?? book.content ?? "Описание отсутствует.";
+    }
+
     function render() {
       const query = search.value.trim().toLowerCase();
+
       const filtered = books.filter(book =>
-        book.title.toLowerCase().includes(query) ||
-        book.author.toLowerCase().includes(query)
+        String(getTitle(book)).toLowerCase().includes(query) ||
+        String(getAuthor(book)).toLowerCase().includes(query)
       );
 
       info.textContent = `Книг в каталоге: ${filtered.length}`;
 
       if (!filtered.length) {
-        container.innerHTML = '<p class="empty">Ничего не найдено. Попробуй другой запрос.</p>';
+        container.innerHTML =
+          '<p class="empty">Книги не найдены.</p>';
         return;
       }
 
-      container.innerHTML = filtered.map((book, index) => `
-        <article class="book">
-          <div class="cover" style="background:${book.color}">
-            ${book.title}
-          </div>
-          <h2>${book.title}</h2>
-          <div class="author">${book.author}</div>
-          <p class="description">${book.description}</p>
-          <button data-index="${index}">Подробнее</button>
-        </article>
-      `).join("");
+      container.innerHTML = filtered.map((book, index) => {
+        const title = escapeHTML(getTitle(book));
+        const author = escapeHTML(getAuthor(book));
+        const description = escapeHTML(getDescription(book));
 
-      container.querySelectorAll("button").forEach((button, index) => {
+        return `
+          <article class="book">
+            <div class="cover">${title}</div>
+            <h2>${title}</h2>
+            <div class="author">${author}</div>
+            <p class="description">${description}</p>
+            <button data-index="${index}">Подробнее</button>
+          </article>
+        `;
+      }).join("");
+
+      container.querySelectorAll("button").forEach(button => {
         button.addEventListener("click", () => {
-          const book = filtered[index];
-          alert(`${book.title}\nАвтор: ${book.author}\n\n${book.description}`);
+          const book = filtered[Number(button.dataset.index)];
+
+          alert(
+            `${getTitle(book)}\n` +
+            `Автор: ${getAuthor(book)}\n\n` +
+            `${getDescription(book)}`
+          );
         });
       });
     }
 
+    async function loadBooks() {
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/books?select=*`,
+          {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Ошибка ${response.status}: ${error}`);
+        }
+
+        books = await response.json();
+        render();
+      } catch (error) {
+        console.error("Ошибка Supabase:", error);
+        info.textContent = "Не удалось загрузить книги из Supabase.";
+        container.innerHTML =
+          '<p class="empty">Проверь ключ, название таблицы и права доступа. Подробности есть в консоли браузера (F12).</p>';
+      }
+    }
+
     search.addEventListener("input", render);
-    render();
+    loadBooks();
   </script>
 </body>
 </html>
-```
